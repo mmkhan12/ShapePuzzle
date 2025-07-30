@@ -4,9 +4,9 @@ public class PuzzlePiece : MonoBehaviour
 {
     public string pieceID;              // e.g. "cross_small", "oval_half1"
     public Vector3 snapOffset;          // Optional offset when snapping
-    public float snapDistance = 0.5f;
+    public float snapDistance = 0.3f;
     public float rotationStep = 45f;
-    public float snapAngleTolerance = 10f;
+    public float snapAngleTolerance = 2f;
     public float symmetryAngle = 90f;
 
     private Vector3 startPosition;
@@ -26,7 +26,7 @@ public class PuzzlePiece : MonoBehaviour
     public AudioClip rotateSound;
     private AudioSource audioSource;
 
-    
+
     void Start()
     {
         startPosition = transform.position;
@@ -102,6 +102,8 @@ public class PuzzlePiece : MonoBehaviour
                 float expectedAngle = (slotAngle + angleOffset) % 360f;
                 float angleDiff = Mathf.Abs(Mathf.DeltaAngle(pieceAngle, expectedAngle));
 
+                Debug.Log($"pieceAngle: {pieceAngle}, expectedAngle: {expectedAngle}, angleDiff: {angleDiff}");
+
                 if (angleDiff <= snapAngleTolerance)
                 {
                     rotationMatches = true;
@@ -109,16 +111,27 @@ public class PuzzlePiece : MonoBehaviour
                 }
             }
 
+            // Enforce 0° only for star, triangle, pentagon
+            bool requiresExactZeroRotation = pieceID.Contains("star") || pieceID.Contains("triangle") || pieceID.Contains("pentagon") || pieceID.Contains("righttriangle");
+
+            if (requiresExactZeroRotation)
+            {
+                rotationMatches = Mathf.Abs(Mathf.DeltaAngle(pieceAngle, 0f)) <= snapAngleTolerance;
+            }
+
             if (rotationMatches)
             {
-                // Snap
-                transform.position = currentSlot.transform.position + snapOffset + new Vector3(0, 0, -0.1f);
-                transform.rotation = currentSlot.transform.rotation;
-                isPlaced = true;
+                float distanceToSlot = Vector3.Distance(transform.position, currentSlot.transform.position);
+                if (distanceToSlot <= snapDistance)
+                {
+                    // Snap
+                    transform.position = currentSlot.transform.position + snapOffset + new Vector3(0, 0, -0.1f);
+                    isPlaced = true;
 
-                if (cheerSound != null)
-                    audioSource.PlayOneShot(cheerSound, 0.1f);
-                return;
+                    if (cheerSound != null)
+                        audioSource.PlayOneShot(cheerSound, 0.1f);
+                    return;
+                }
             }
         }
 
@@ -128,16 +141,16 @@ public class PuzzlePiece : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        Debug.Log("TRIGGER ENTER: " + other.name); // ✅ Confirm if the slot is detected
+        Debug.Log("TRIGGER ENTER: " + other.name); // Confirm if the slot is detected
         PuzzleSlot slot = other.GetComponent<PuzzleSlot>();
 
         if (slot != null)
         {
-            Debug.Log("FOUND SLOT: " + slot.name); // ✅ Slot has script attached
+            Debug.Log("FOUND SLOT: " + slot.name); //  Slot has script attached
 
             if (IsMatchingSlot(slot))
             {
-                Debug.Log("SLOT MATCHED: " + slot.name); // ✅ Valid match
+                Debug.Log("SLOT MATCHED: " + slot.name); // Valid match
                 currentSlot = slot;
             }
             else

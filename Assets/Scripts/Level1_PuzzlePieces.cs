@@ -2,11 +2,16 @@
 
 public class ShapePiece : MonoBehaviour
 {
+    [Header("Slot & Snapping")]
     [SerializeField] private Transform correctSlot;
     [SerializeField] private float snapDistance = 0.5f;
-    [SerializeField] private float symmetryAngle = 90f;
     [SerializeField] private float rotationStep = 45f;
 
+    [Header("Symmetry Settings")]
+    [SerializeField] private bool isSymmetrical = false;
+    [SerializeField] private float customSymmetryAngle = 360f; // e.g., 180 or 90 for symmetrical shapes
+
+    [Header("Audio")]
     public AudioClip cheerSound;
     public AudioClip rotateSound;
     private AudioSource audioSource;
@@ -28,13 +33,13 @@ public class ShapePiece : MonoBehaviour
         float targetAngle = correctSlot.eulerAngles.z;
         float incorrectAngle = targetAngle;
 
-        int maxTries = 10; // Avoid infinite loops
+        int maxTries = 10;
         int tries = 0;
 
+        // Randomize start rotation, avoiding snapping into correct orientation
         while (Mathf.Abs(Mathf.DeltaAngle(incorrectAngle, targetAngle)) < 10f && tries < maxTries)
         {
             float randomAngle = Random.Range(0f, 360f);
-            // Round to nearest rotation step (e.g., 45°)
             float roundedAngle = Mathf.Round(randomAngle / rotationStep) * rotationStep;
             incorrectAngle = roundedAngle;
             tries++;
@@ -42,7 +47,6 @@ public class ShapePiece : MonoBehaviour
 
         transform.rotation = Quaternion.Euler(0f, 0f, incorrectAngle);
 
-        // Initialize AudioSource
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
         {
@@ -74,7 +78,7 @@ public class ShapePiece : MonoBehaviour
                 isDragging = true;
 
                 Vector3 mousePos = Input.mousePosition;
-                mousePos.z = 10f; // Adjust based on camera
+                mousePos.z = 10f; // Distance from camera
                 Vector3 worldPos = Camera.main.ScreenToWorldPoint(mousePos);
                 transform.position = new Vector3(worldPos.x, worldPos.y, startPosition.z);
             }
@@ -88,12 +92,11 @@ public class ShapePiece : MonoBehaviour
             float pressDuration = Time.time - mouseDownTime;
             float moveDistance = Vector3.Distance(mouseDownPosition, Input.mousePosition);
 
-            // Rotate on tap
+            // Tap to rotate
             if (!isDragging && pressDuration <= clickThresholdTime && moveDistance < dragThresholdDistance)
             {
                 transform.Rotate(0f, 0f, rotationStep);
 
-                // Play rotate sound at lower volume
                 if (rotateSound != null && audioSource != null)
                 {
                     audioSource.PlayOneShot(rotateSound, 0.3f);
@@ -105,35 +108,42 @@ public class ShapePiece : MonoBehaviour
             Vector2 shapePos = new Vector2(transform.position.x, transform.position.y);
             Vector2 slotPos = new Vector2(correctSlot.position.x, correctSlot.position.y);
             float distance = Vector2.Distance(shapePos, slotPos);
+
             float currentAngle = transform.eulerAngles.z;
             float targetAngle = correctSlot.eulerAngles.z;
 
             bool isRotationCorrect = false;
-            for (float a = 0; a < 360f; a += symmetryAngle)
+
+            if (isSymmetrical)
             {
-                float expectedAngle = (targetAngle + a) % 360f;
-                float difference = Mathf.Abs(Mathf.DeltaAngle(currentAngle, expectedAngle));
-                if (difference < 10f)
+                for (float a = 0; a < 360f; a += customSymmetryAngle)
                 {
-                    isRotationCorrect = true;
-                    break;
+                    float expectedAngle = (targetAngle + a) % 360f;
+                    float difference = Mathf.Abs(Mathf.DeltaAngle(currentAngle, expectedAngle));
+                    if (difference < 10f)
+                    {
+                        isRotationCorrect = true;
+                        break;
+                    }
                 }
+            }
+            else
+            {
+                float angleDifference = Mathf.Abs(Mathf.DeltaAngle(currentAngle, targetAngle));
+                isRotationCorrect = angleDifference < 10f;
             }
 
             if (distance <= snapDistance && isRotationCorrect)
             {
                 transform.position = new Vector3(correctSlot.position.x, correctSlot.position.y, startPosition.z);
-                transform.rotation = correctSlot.rotation;
+                // Don't snap rotation — must be already correct
                 placedCorrectly = true;
 
-                // Play cheer sound at lower volume
                 if (cheerSound != null && audioSource != null)
                 {
                     audioSource.PlayOneShot(cheerSound, 0.3f);
                 }
             }
-
-            // Else: do nothing — player can leave shape anywhere
         }
     }
 }

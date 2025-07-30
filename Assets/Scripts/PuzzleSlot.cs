@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class PuzzleSlot : MonoBehaviour
 {
@@ -8,3 +8,4 @@ public class PuzzleSlot : MonoBehaviour
     [HideInInspector]
     public bool isOccupied = false;
 }
+
