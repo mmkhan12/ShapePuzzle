@@ -2,18 +2,17 @@
 
 public class PuzzlePiece : MonoBehaviour
 {
-    public string pieceID;              // e.g. "cross_small", "oval_half1"
-    public Vector3 snapOffset;          // Optional offset when snapping
+    public string pieceID;
+    public Vector3 snapOffset;
     public float snapDistance = 0.3f;
     public float rotationStep = 45f;
     public float snapAngleTolerance = 2f;
-    public float symmetryAngle = 90f;
+    public float symmetryAngle = 90f;  // ✅ Allows multiple correct angles
 
     private Vector3 startPosition;
     private bool isPlaced = false;
     private PuzzleSlot currentSlot;
     private Vector3 offset;
-    private Vector3 originalPosition;
 
     private float mouseDownTime;
     private Vector3 mouseDownPosition;
@@ -22,33 +21,14 @@ public class PuzzlePiece : MonoBehaviour
     public float clickThresholdTime = 0.2f;
     public float dragThresholdDistance = 0.2f;
 
-    public AudioClip cheerSound;
-    public AudioClip rotateSound;
-    private AudioSource audioSource;
-
-
     void Start()
     {
         startPosition = transform.position;
 
-        float targetAngle = 0f;
-        float incorrectAngle = targetAngle;
-        int maxTries = 10;
-        int tries = 0;
-
-        while (Mathf.Abs(Mathf.DeltaAngle(incorrectAngle, targetAngle)) < snapAngleTolerance && tries < maxTries)
-        {
-            float randomAngle = Random.Range(0f, 360f);
-            float roundedAngle = Mathf.Round(randomAngle / rotationStep) * rotationStep;
-            incorrectAngle = roundedAngle;
-            tries++;
-        }
-
-        transform.rotation = Quaternion.Euler(0f, 0f, incorrectAngle);
-
-        audioSource = GetComponent<AudioSource>();
-        if (audioSource == null)
-            audioSource = gameObject.AddComponent<AudioSource>();
+        // ✅ Randomize start rotation
+        float randomAngle = Random.Range(0f, 360f);
+        float roundedAngle = Mathf.Round(randomAngle / rotationStep) * rotationStep;
+        transform.rotation = Quaternion.Euler(0f, 0f, roundedAngle);
     }
 
     void OnMouseDown()
@@ -83,114 +63,77 @@ public class PuzzlePiece : MonoBehaviour
         float pressDuration = Time.time - mouseDownTime;
         float moveDistance = Vector3.Distance(mouseDownPosition, Input.mousePosition);
 
+        // ✅ Click = rotate
         if (!isDragging && pressDuration <= clickThresholdTime && moveDistance < dragThresholdDistance)
         {
             transform.Rotate(0f, 0f, rotationStep);
-            if (rotateSound != null)
-                audioSource.PlayOneShot(rotateSound);
             return;
         }
 
+        // ✅ Try to snap into slot
         if (currentSlot != null)
         {
-            float pieceAngle = transform.eulerAngles.z;
-            float slotAngle = currentSlot.transform.eulerAngles.z;
-
-            bool rotationMatches = false;
-            for (float angleOffset = 0; angleOffset < 360f; angleOffset += symmetryAngle)
+            foreach (Transform snapPoint in currentSlot.snapPoints)
             {
-                float expectedAngle = (slotAngle + angleOffset) % 360f;
-                float angleDiff = Mathf.Abs(Mathf.DeltaAngle(pieceAngle, expectedAngle));
-
-                Debug.Log($"pieceAngle: {pieceAngle}, expectedAngle: {expectedAngle}, angleDiff: {angleDiff}");
-
-                if (angleDiff <= snapAngleTolerance)
+                float distanceToSlot = Vector3.Distance(transform.position, snapPoint.position);
+                if (distanceToSlot <= snapDistance && RotationMatches(currentSlot))
                 {
-                    rotationMatches = true;
-                    break;
-                }
-            }
-
-            // Enforce 0° only for star, triangle, pentagon
-            bool requiresExactZeroRotation = pieceID.Contains("star") || pieceID.Contains("triangle") || pieceID.Contains("pentagon") || pieceID.Contains("righttriangle");
-
-            if (requiresExactZeroRotation)
-            {
-                rotationMatches = Mathf.Abs(Mathf.DeltaAngle(pieceAngle, 0f)) <= snapAngleTolerance;
-            }
-
-            if (rotationMatches)
-            {
-                float distanceToSlot = Vector3.Distance(transform.position, currentSlot.transform.position);
-                if (distanceToSlot <= snapDistance)
-                {
-                    // Snap
-                    transform.position = currentSlot.transform.position + snapOffset + new Vector3(0, 0, -0.1f);
+                    transform.position = snapPoint.position + snapOffset + new Vector3(0, 0, -0.1f);
+                    transform.rotation = Quaternion.Euler(0, 0, Mathf.Round(transform.eulerAngles.z / rotationStep) * rotationStep);
                     isPlaced = true;
-
-                    if (cheerSound != null)
-                        audioSource.PlayOneShot(cheerSound, 0.1f);
                     return;
                 }
             }
         }
 
-        // Return to original position if not snapped
+        // Reset if failed
         transform.position = startPosition;
     }
 
-    void OnTriggerEnter(Collider other)
+    private bool RotationMatches(PuzzleSlot slot)
     {
-        Debug.Log("TRIGGER ENTER: " + other.name); // Confirm if the slot is detected
-        PuzzleSlot slot = other.GetComponent<PuzzleSlot>();
+        float pieceAngle = transform.eulerAngles.z;
+        float slotAngle = slot.transform.eulerAngles.z;
 
-        if (slot != null)
+        for (float angleOffset = 0; angleOffset < 360f; angleOffset += symmetryAngle)
         {
-            Debug.Log("FOUND SLOT: " + slot.name); //  Slot has script attached
+            float expectedAngle = (slotAngle + angleOffset) % 360f;
+            float angleDiff = Mathf.Abs(Mathf.DeltaAngle(pieceAngle, expectedAngle));
 
-            if (IsMatchingSlot(slot))
-            {
-                Debug.Log("SLOT MATCHED: " + slot.name); // Valid match
-                currentSlot = slot;
-            }
-            else
-            {
-                Debug.Log("Slot NOT matched");
-            }
-        }
-    }
-
-    void OnTriggerExit(Collider other)
-    {
-        PuzzleSlot slot = other.GetComponent<PuzzleSlot>();
-        if (slot != null && slot == currentSlot)
-        {
-            currentSlot = null;
-            Debug.Log("Exited slot: " + slot.name);
-        }
-    }
-
-    private bool IsMatchingSlot(PuzzleSlot slot)
-    {
-        if (slot == null || slot.acceptablePieceIDs == null)
-        {
-            Debug.LogWarning("Slot or acceptablePieceIDs is null");
-            return false;
-        }
-
-        foreach (string id in slot.acceptablePieceIDs)
-        {
-            if (pieceID == id)
-            {
+            if (angleDiff <= snapAngleTolerance)
                 return true;
-            }
         }
 
         return false;
     }
 
-    public bool IsPlacedCorrectly()
+    void OnTriggerEnter2D(Collider2D other)   // ✅ 2D trigger
     {
-        return isPlaced;
+        PuzzleSlot slot = other.GetComponent<PuzzleSlot>();
+        if (slot != null && IsMatchingSlot(slot))
+        {
+            currentSlot = slot;
+        }
+        Debug.Log("Piece entered trigger with: " + other.name);
     }
+
+    void OnTriggerExit2D(Collider2D other)   // ✅ 2D trigger
+    {
+        PuzzleSlot slot = other.GetComponent<PuzzleSlot>();
+        if (slot != null && slot == currentSlot)
+        {
+            currentSlot = null;
+        }
+    }
+
+    private bool IsMatchingSlot(PuzzleSlot slot)
+    {
+        foreach (string id in slot.acceptablePieceIDs)
+        {
+            if (pieceID == id) return true;
+        }
+        return false;
+    }
+
+    public bool IsPlacedCorrectly => isPlaced;
 }
