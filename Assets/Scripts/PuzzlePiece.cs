@@ -26,10 +26,7 @@ public class PuzzlePiece : MonoBehaviour
     private float mouseDownTime;
     private Vector3 mouseDownPosition;
     private bool isDragging = false;
-
-    // Track which snap point we’re snapped to
     private SnapPoint snappedPoint;
-
     private AudioSource audioSource;
 
     void Start()
@@ -66,7 +63,6 @@ public class PuzzlePiece : MonoBehaviour
         Vector3 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         mouseWorldPos.z = 0f;
         offset = transform.position - mouseWorldPos;
-
         isDragging = false;
     }
 
@@ -75,18 +71,14 @@ public class PuzzlePiece : MonoBehaviour
         if (isPlaced || Camera.main == null) return;
 
         Vector3 currentMousePos = Input.mousePosition;
-
-        // Convert to world distance
         Vector3 worldStart = Camera.main.ScreenToWorldPoint(mouseDownPosition);
         Vector3 worldCurrent = Camera.main.ScreenToWorldPoint(currentMousePos);
         worldStart.z = worldCurrent.z = 0f;
 
         float distance = Vector2.Distance(worldStart, worldCurrent);
-
         if (distance > dragThresholdDistance)
         {
             isDragging = true;
-
             Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition) + offset;
             mousePos.z = 0f;
             transform.position = mousePos;
@@ -98,27 +90,23 @@ public class PuzzlePiece : MonoBehaviour
         if (Camera.main == null) return;
 
         float pressDuration = Time.time - mouseDownTime;
-
-        // Use world space for drag check
         Vector3 worldStart = Camera.main.ScreenToWorldPoint(mouseDownPosition);
         Vector3 worldEnd = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         worldStart.z = worldEnd.z = 0f;
+
         float moveDistance = Vector2.Distance(worldStart, worldEnd);
 
         // ✅ Click = rotate
         if (!isDragging && pressDuration <= clickThresholdTime && moveDistance < dragThresholdDistance)
         {
             transform.Rotate(0f, 0f, rotationStep);
-
             if (rotateSound != null)
                 audioSource.PlayOneShot(rotateSound, audioVolume);
-
             return;
         }
 
         // ✅ Try snapping to slot
         bool snapped = false;
-
         if (currentSlot != null)
         {
             foreach (var snapPoint in currentSlot.snapPoints)
@@ -135,11 +123,11 @@ public class PuzzlePiece : MonoBehaviour
                 }
 
                 // Skip if not allowed or already occupied
-                if (!idMatches || snapPoint.isOccupied) continue;
+                if (!idMatches || snapPoint.isOccupied)
+                    continue;
 
                 // Distance check
                 float distanceToSlot = Vector3.Distance(transform.position, snapPoint.snapTransform.position);
-
                 if (distanceToSlot <= snapDistance && RotationMatches(currentSlot))
                 {
                     // --- NEW OVERLAP CHECK ---
@@ -151,9 +139,7 @@ public class PuzzlePiece : MonoBehaviour
 
                     // Test transform at snap position
                     Vector3 testPosition = snapPoint.snapTransform.position + snapOffset + new Vector3(0, 0, -0.1f);
-                    Quaternion testRotation = Quaternion.Euler(0, 0,
-                        Mathf.Round(transform.eulerAngles.z / rotationStep) * rotationStep);
-
+                    Quaternion testRotation = Quaternion.Euler(0, 0, Mathf.Round(transform.eulerAngles.z / rotationStep) * rotationStep);
                     transform.position = testPosition;
                     transform.rotation = testRotation;
 
@@ -175,7 +161,7 @@ public class PuzzlePiece : MonoBehaviour
                                 currentSlot != null &&
                                 otherPiece.snappedPoint.snapTransform.parent == currentSlot.transform)
                             {
-                                continue; // skip rejection
+                                continue;
                             }
 
                             // ❌ Otherwise block snapping
@@ -188,14 +174,12 @@ public class PuzzlePiece : MonoBehaviour
                     transform.position = oldPos;
                     transform.rotation = oldRot;
 
-                    // If overlap → skip snapping
                     if (overlapFound) continue;
 
                     // --- SNAP INTO PLACE ---
                     transform.position = testPosition;
                     transform.rotation = testRotation;
 
-                    // Mark as placed
                     isPlaced = true;
                     snappedPoint = snapPoint;
                     snapPoint.isOccupied = true;
@@ -224,16 +208,13 @@ public class PuzzlePiece : MonoBehaviour
         float pieceAngle = transform.eulerAngles.z;
         float slotAngle = slot.transform.eulerAngles.z;
 
-        // Allow symmetry (90, 180, etc.)
         for (float angleOffset = 0; angleOffset < 360f; angleOffset += symmetryAngle)
         {
             float expectedAngle = (slotAngle + angleOffset) % 360f;
             float angleDiff = Mathf.Abs(Mathf.DeltaAngle(pieceAngle, expectedAngle));
-
             if (angleDiff <= snapAngleTolerance)
                 return true;
         }
-
         return false;
     }
 

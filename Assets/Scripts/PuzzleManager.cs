@@ -18,7 +18,7 @@ public class PuzzleManager : MonoBehaviour
     {
         foreach (var piece in pieces)
         {
-            if (!piece.IsPlacedCorrectly)  // ✅ works with property version
+            if (!piece.IsPlacedCorrectly) // ✅ works with property version
                 return false; // If one piece isn’t placed, puzzle isn’t done
         }
         return true; // Only true if all pieces are placed
