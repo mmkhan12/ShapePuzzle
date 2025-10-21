@@ -3,16 +3,16 @@
 public class PuzzlePiece : MonoBehaviour
 {
     [Header("Piece Settings")]
-    public string pieceID; // e.g. "star1", "oval_half2"
-    public Vector3 snapOffset; // Optional offset when snapping
-    public float snapDistance = 0.3f; // Distance threshold for snapping
-    public float rotationStep = 45f; // How much the piece rotates per click
-    public float snapAngleTolerance = 2f; // Angle tolerance for snapping
-    public float symmetryAngle = 360f; // 360 = only exact match, 180 = 2 valid, 90 = 4 valid
+    public string pieceID;
+    public Vector3 snapOffset;
+    public float snapDistance = 0.3f;
+    public float rotationStep = 45f;
+    public float snapAngleTolerance = 2f;
+    public float symmetryAngle = 360f;
 
     [Header("Drag Settings")]
     public float clickThresholdTime = 0.2f;
-    public float dragThresholdDistance = 0.2f; // Measured in world units
+    public float dragThresholdDistance = 0.2f;
 
     [Header("Audio Settings")]
     public AudioClip cheerSound;
@@ -26,19 +26,16 @@ public class PuzzlePiece : MonoBehaviour
     private float mouseDownTime;
     private Vector3 mouseDownPosition;
     private bool isDragging = false;
-    private SnapPoint snappedPoint;
+    public SnapPoint snappedPoint;
     private AudioSource audioSource;
 
     void Start()
     {
         startPosition = transform.position;
-
-        // Randomize start rotation
         float randomAngle = Random.Range(0f, 360f);
         float roundedAngle = Mathf.Round(randomAngle / rotationStep) * rotationStep;
         transform.rotation = Quaternion.Euler(0f, 0f, roundedAngle);
 
-        // Set up audio source
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
             audioSource = gameObject.AddComponent<AudioSource>();
@@ -48,7 +45,6 @@ public class PuzzlePiece : MonoBehaviour
     {
         if (Camera.main == null) return;
 
-        // If already placed, free the snap point
         if (isPlaced && snappedPoint != null)
         {
             snappedPoint.isOccupied = false;
@@ -96,7 +92,6 @@ public class PuzzlePiece : MonoBehaviour
 
         float moveDistance = Vector2.Distance(worldStart, worldEnd);
 
-        // ✅ Click = rotate
         if (!isDragging && pressDuration <= clickThresholdTime && moveDistance < dragThresholdDistance)
         {
             transform.Rotate(0f, 0f, rotationStep);
@@ -105,13 +100,17 @@ public class PuzzlePiece : MonoBehaviour
             return;
         }
 
-        // ✅ Try snapping to slot
         bool snapped = false;
-        if (currentSlot != null)
+
+        if (currentSlot == null)
+        {
+            Debug.Log($"[PuzzlePiece] {pieceID}: No current slot to snap to.");
+        }
+        else
         {
             foreach (var snapPoint in currentSlot.snapPoints)
             {
-                // Check if this piece ID is valid for this snap point
+                // ID match?
                 bool idMatches = false;
                 foreach (string id in snapPoint.acceptablePieceIDs)
                 {
@@ -121,83 +120,100 @@ public class PuzzlePiece : MonoBehaviour
                         break;
                     }
                 }
-
-                // Skip if not allowed or already occupied
-                if (!idMatches || snapPoint.isOccupied)
-                    continue;
-
-                // Distance check
-                float distanceToSlot = Vector3.Distance(transform.position, snapPoint.snapTransform.position);
-                if (distanceToSlot <= snapDistance && RotationMatches(currentSlot))
+                if (!idMatches)
                 {
-                    // --- NEW OVERLAP CHECK ---
-                    Collider2D thisCollider = GetComponent<Collider2D>();
+                    Debug.Log($"[PuzzlePiece] {pieceID}: SnapPoint rejects ID {pieceID}.");
+                    continue;
+                }
+                if (snapPoint.isOccupied)
+                {
+                    Debug.Log($"[PuzzlePiece] {pieceID}: SnapPoint is already occupied.");
+                    continue;
+                }
 
-                    // Save old transform
-                    Vector3 oldPos = transform.position;
-                    Quaternion oldRot = transform.rotation;
+                float distanceToSlot = Vector3.Distance(transform.position, snapPoint.snapTransform.position);
+                if (distanceToSlot > snapDistance)
+                {
+                    Debug.Log($"[PuzzlePiece] {pieceID}: Too far from snap (dist {distanceToSlot:F3} > snapDistance {snapDistance}).");
+                    continue;
+                }
 
-                    // Test transform at snap position
-                    Vector3 testPosition = snapPoint.snapTransform.position + snapOffset + new Vector3(0, 0, -0.1f);
-                    Quaternion testRotation = Quaternion.Euler(0, 0, Mathf.Round(transform.eulerAngles.z / rotationStep) * rotationStep);
-                    transform.position = testPosition;
-                    transform.rotation = testRotation;
+                if (!RotationMatches(currentSlot))
+                {
+                    Debug.Log($"[PuzzlePiece] {pieceID}: Rotation mismatch (angle tolerance).");
+                    continue;
+                }
 
-                    bool overlapFound = false;
-                    Collider2D[] overlaps = Physics2D.OverlapBoxAll(
-                        thisCollider.bounds.center,
-                        thisCollider.bounds.size,
-                        transform.eulerAngles.z
-                    );
+                // Save old
+                Vector3 oldPos = transform.position;
+                Quaternion oldRot = transform.rotation;
 
-                    foreach (var col in overlaps)
+                Vector3 testPosition = snapPoint.snapTransform.position + snapOffset + new Vector3(0, 0, -0.1f);
+                Quaternion testRotation = Quaternion.Euler(0, 0, Mathf.Round(transform.eulerAngles.z / rotationStep) * rotationStep);
+
+                transform.position = testPosition;
+                transform.rotation = testRotation;
+
+                Collider2D thisCollider = GetComponent<Collider2D>();
+                if (thisCollider == null)
+                {
+                    Debug.LogError($"[PuzzlePiece] {pieceID}: No Collider2D on piece!");
+                    transform.position = oldPos;
+                    transform.rotation = oldRot;
+                    continue;
+                }
+
+                // Overlap check with other pieces
+                Collider2D[] overlaps = Physics2D.OverlapBoxAll(thisCollider.bounds.center, thisCollider.bounds.size, transform.eulerAngles.z);
+                bool overlapFound = false;
+                foreach (var col in overlaps)
+                {
+                    PuzzlePiece other = col.GetComponent<PuzzlePiece>();
+                    if (other != null && other != this && other.IsPlacedCorrectly)
                     {
-                        PuzzlePiece otherPiece = col.GetComponent<PuzzlePiece>();
-                        if (otherPiece != null && otherPiece != this && otherPiece.IsPlacedCorrectly)
+                        // allow if it's another snap point in same slot
+                        if (other.snappedPoint != null &&
+                            other.snappedPoint != snapPoint &&
+                            currentSlot != null &&
+                            other.snappedPoint.snapTransform.parent == currentSlot.transform)
                         {
-                            // ✅ Allow if snapped to a *different* snap point in the same slot
-                            if (otherPiece.snappedPoint != null &&
-                                otherPiece.snappedPoint != snapPoint &&
-                                currentSlot != null &&
-                                otherPiece.snappedPoint.snapTransform.parent == currentSlot.transform)
-                            {
-                                continue;
-                            }
-
-                            // ❌ Otherwise block snapping
+                            // skip
+                        }
+                        else
+                        {
                             overlapFound = true;
+                            Debug.Log($"[PuzzlePiece] {pieceID}: Overlap with other piece {other.pieceID}.");
                             break;
                         }
                     }
+                }
 
-                    // Restore original transform
+                if (overlapFound)
+                {
                     transform.position = oldPos;
                     transform.rotation = oldRot;
-
-                    if (overlapFound) continue;
-
-                    // --- SNAP INTO PLACE ---
-                    transform.position = testPosition;
-                    transform.rotation = testRotation;
-
-                    isPlaced = true;
-                    snappedPoint = snapPoint;
-                    snapPoint.isOccupied = true;
-                    snapPoint.occupyingPiece = this;
-                    snapped = true;
-
-                    if (cheerSound != null)
-                        audioSource.PlayOneShot(cheerSound, audioVolume);
-
-                    break;
+                    continue;
                 }
+
+               
+                // If we reach here, snap!
+                transform.position = testPosition;
+                transform.rotation = testRotation;
+                isPlaced = true;
+                snappedPoint = snapPoint;
+                snapPoint.isOccupied = true;
+                snapPoint.occupyingPiece = this;
+                snapped = true;
+                Debug.Log($"[PuzzlePiece] {pieceID}: Snapped successfully to {snapPoint.snapTransform.name}.");
+                if (cheerSound != null)
+                    audioSource.PlayOneShot(cheerSound, audioVolume);
+                break;
             }
         }
 
-        // Reset if not snapped
         if (!snapped)
         {
-            transform.position = startPosition;
+            //transform.position = startPosition;
             snappedPoint = null;
             isPlaced = false;
         }
@@ -207,12 +223,11 @@ public class PuzzlePiece : MonoBehaviour
     {
         float pieceAngle = transform.eulerAngles.z;
         float slotAngle = slot.transform.eulerAngles.z;
-
-        for (float angleOffset = 0; angleOffset < 360f; angleOffset += symmetryAngle)
+        for (float angleOffset = 0f; angleOffset < 360f; angleOffset += symmetryAngle)
         {
-            float expectedAngle = (slotAngle + angleOffset) % 360f;
-            float angleDiff = Mathf.Abs(Mathf.DeltaAngle(pieceAngle, expectedAngle));
-            if (angleDiff <= snapAngleTolerance)
+            float expected = (slotAngle + angleOffset) % 360f;
+            float diff = Mathf.Abs(Mathf.DeltaAngle(pieceAngle, expected));
+            if (diff <= snapAngleTolerance)
                 return true;
         }
         return false;

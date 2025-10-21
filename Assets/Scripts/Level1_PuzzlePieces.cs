@@ -143,6 +143,9 @@ public class ShapePiece : MonoBehaviour
                 {
                     audioSource.PlayOneShot(cheerSound, 0.3f);
                 }
+
+                // Notify PuzzleManager
+                FindFirstObjectByType<Level1_PuzzleManager>()?.OnShapePlaced();
             }
         }
     }
