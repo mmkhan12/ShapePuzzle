@@ -589,7 +589,7 @@ Transform:
   m_GameObject: {fileID: 153208902}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.008, y: -0.006, z: 0}
+  m_LocalPosition: {x: 0.015, y: -0.006, z: 0}
   m_LocalScale: {x: 4.575773, y: 2.644, z: 2.644}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -909,7 +909,7 @@ AudioSource:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 211554763}
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 8300000, guid: cb519496a71565f48a6d1fcdbc9ce2d0, type: 3}
@@ -1380,7 +1380,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pieceID: righttriangle2
   snapOffset: {x: 0, y: 0, z: 0}
-  snapDistance: 0.3
+  snapDistance: 0.5
   rotationStep: 45
   snapAngleTolerance: 2
   symmetryAngle: 360
@@ -2063,7 +2063,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pieceID: righttriangle1
   snapOffset: {x: 0, y: 0, z: 0}
-  snapDistance: 0.3
+  snapDistance: 0.5
   rotationStep: 45
   snapAngleTolerance: 2
   symmetryAngle: 360
@@ -2776,7 +2776,7 @@ Transform:
   m_GameObject: {fileID: 1424397075}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.07, y: -0.034, z: 0}
+  m_LocalPosition: {x: -0.013, y: 0.008, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3272,7 +3272,7 @@ Transform:
   m_GameObject: {fileID: 1765781625}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.048, y: 0.01, z: 0}
+  m_LocalPosition: {x: -0.002, y: -0.004, z: 0}
   m_LocalScale: {x: 4.575773, y: 2.644, z: 2.644}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4194,7 +4194,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pieceID: star2
   snapOffset: {x: 0, y: 0, z: 0}
-  snapDistance: 0.3
+  snapDistance: 0.5
   rotationStep: 45
   snapAngleTolerance: 2
   symmetryAngle: 360
@@ -4658,7 +4658,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pieceID: pentagon2
   snapOffset: {x: 0, y: 0, z: 0}
-  snapDistance: 0.3
+  snapDistance: 0.5
   rotationStep: 45
   snapAngleTolerance: 2
   symmetryAngle: 360
@@ -4812,7 +4812,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pieceID: pentagon1
   snapOffset: {x: 0, y: 0, z: 0}
-  snapDistance: 0.3
+  snapDistance: 0.5
   rotationStep: 45
   snapAngleTolerance: 2
   symmetryAngle: 360
@@ -4927,7 +4927,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pieceID: triangle2
   snapOffset: {x: 0, y: 0, z: 0}
-  snapDistance: 0.3
+  snapDistance: 0.5
   rotationStep: 45
   snapAngleTolerance: 2
   symmetryAngle: 360
@@ -5059,7 +5059,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pieceID: cross1
   snapOffset: {x: 0, y: 0, z: 0}
-  snapDistance: 0.3
+  snapDistance: 0.5
   rotationStep: 45
   snapAngleTolerance: 2
   symmetryAngle: 90
@@ -5240,7 +5240,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pieceID: triangle1
   snapOffset: {x: 0, y: 0, z: 0}
-  snapDistance: 0.3
+  snapDistance: 0.5
   rotationStep: 45
   snapAngleTolerance: 2
   symmetryAngle: 360
@@ -5355,7 +5355,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pieceID: star1
   snapOffset: {x: 0, y: 0, z: 0}
-  snapDistance: 0.3
+  snapDistance: 0.5
   rotationStep: 45
   snapAngleTolerance: 2
   symmetryAngle: 360
@@ -5712,7 +5712,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pieceID: oval2
   snapOffset: {x: 0, y: 0, z: 0}
-  snapDistance: 0.3
+  snapDistance: 0.5
   rotationStep: 45
   snapAngleTolerance: 2
   symmetryAngle: 180
@@ -5885,7 +5885,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pieceID: oval1
   snapOffset: {x: 0, y: 0, z: 0}
-  snapDistance: 0.3
+  snapDistance: 0.5
   rotationStep: 45
   snapAngleTolerance: 2
   symmetryAngle: 180
@@ -6055,7 +6055,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pieceID: cross2
   snapOffset: {x: 0, y: 0, z: 0}
-  snapDistance: 0.3
+  snapDistance: 0.5
   rotationStep: 45
   snapAngleTolerance: 2
   symmetryAngle: 90

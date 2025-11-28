@@ -9,8 +9,8 @@ public class SnapPoint
     [Tooltip("IDs of puzzle pieces allowed to snap here")]
     public string[] acceptablePieceIDs;
 
-    [HideInInspector] public bool isOccupied = false;     
-    [HideInInspector] public PuzzlePiece occupyingPiece; 
+    [HideInInspector] public bool isOccupied = false;
+    [HideInInspector] public PuzzlePiece occupyingPiece;
 }
 
 public class PuzzleSlot : MonoBehaviour
